@@ -18,6 +18,8 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from deepctr_torch.inputs import *
 from deepctr_torch.models.wdl import WDL
 from deepctr_torch.models.self_wdl import self_WDL
+
+
 def wdl_train():
     data = pd.read_csv('./criteo_sample.txt')
 
@@ -48,7 +50,7 @@ def wdl_train():
 
     # 3.generate input data for model
 
-    train, test = train_test_split(data, test_size=0.2, random_state=2020)
+    train, test = train_test_split(data, test_size=0.2, random_state=2018)
     train_model_input = {name: train[name] for name in feature_names}
     test_model_input = {name: test[name] for name in feature_names}
 
@@ -61,18 +63,21 @@ def wdl_train():
         device = 'cuda:0'
 
     model = self_WDL(linear_feature_columns=linear_feature_columns, dnn_feature_columns=dnn_feature_columns,
-                   task='binary',
-                   l2_reg_embedding=1e-5, device=device)
+                     task='binary',
+                     l2_reg_linear=1e-2,
+                     l2_reg_dnn=0,
+                     l2_reg_embedding=1e-2, device=device)
 
-    model.compile("adagrad", "binary_crossentropy",
+    model.compile("sgd", "binary_crossentropy", lr=0.008,
                   metrics=["binary_crossentropy", "auc"], )
 
-    history = model.fit(train_model_input, train[target].values, batch_size=32, epochs=10, verbose=2,
+    history = model.fit(train_model_input, train[target].values, batch_size=16, epochs=200, verbose=2,
                         validation_split=0.2)
     pred_ans = model.predict(test_model_input, 256)
     print("")
     print("test LogLoss", round(log_loss(test[target].values, pred_ans), 4))
     print("test AUC", round(roc_auc_score(test[target].values, pred_ans), 4))
+
 
 if __name__ == "__main__":
     wdl_train()

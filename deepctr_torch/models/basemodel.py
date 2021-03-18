@@ -410,6 +410,7 @@ class BaseModel(nn.Module):
 
     def compile(self, optimizer,
                 loss=None,
+                lr=0.01,
                 metrics=None,
                 ):
         """
@@ -418,14 +419,16 @@ class BaseModel(nn.Module):
         :param metrics: List of metrics to be evaluated by the model during training and testing. Typically you will use `metrics=['accuracy']`.
         """
         self.metrics_names = ["loss"]
+        self.lr = lr
         self.optim = self._get_optim(optimizer)
         self.loss_func = self._get_loss_func(loss)
         self.metrics = self._get_metrics(metrics)
 
+
     def _get_optim(self, optimizer):
         if isinstance(optimizer, str):
             if optimizer == "sgd":
-                optim = torch.optim.SGD(self.parameters(), lr=0.01)
+                optim = torch.optim.SGD(self.parameters(), lr=self.lr)
             elif optimizer == "adam":
                 optim = torch.optim.Adam(self.parameters())  # 0.001
             elif optimizer == "adagrad":
