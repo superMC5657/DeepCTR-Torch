@@ -8,15 +8,19 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-#from .basemodel import BaseModel
-#from ..inputs import combined_dnn_input
-#from ..layers import DNN
+
+
+# from .basemodel import BaseModel
+# from ..inputs import combined_dnn_input
+# from ..layers import DNN
 class Linear(nn.Module):
     def __init__(self, input_dim):
         super(Linear, self).__init__()
         self.linear = nn.Linear(in_features=input_dim, out_features=1)
+
     def forward(self, X):
         return self.linear(X)
+
 
 class DNN(nn.Module):
     def __init__(self, hidden_units, dropout=0.):
@@ -25,6 +29,7 @@ class DNN(nn.Module):
             [nn.Linear(layer[0], layer[1]) for layer in list(zip(hidden_units[:-1], hidden_units[1:]))]
         )
         self.dropout = nn.Dropout(p=dropout)
+
     def forward(self, X):
         for linear in self.dnn_network:
             X = linear(X)
@@ -32,6 +37,8 @@ class DNN(nn.Module):
 
         X = self.dropout(X)
         return X
+
+
 class self_WDL(nn.Module):
     def __init__(self, feature_colums, hidden_units, dnn_dropout=0.):
         super(self_WDL, self).__init__()
@@ -42,8 +49,10 @@ class self_WDL(nn.Module):
             for i, feat in enumerate(self.sparse_feature_cols)
         })
 
-        hidden_units.insert(0, len(self.dense_feature_cols) + len(self.sparse_feature_cols)*self.sparse_feature_cols[0]['embed_dim'])
-        self.dnn_network = DNN(hidden_units)
+        hidden_units.insert(0,
+                            len(self.dense_feature_cols) + len(self.sparse_feature_cols) * self.sparse_feature_cols[0][
+                                'embed_dim'])
+        self.dnn_network = DNN(hidden_units, dropout=dnn_dropout)
         self.linear = Linear(len(self.dense_feature_cols))
         self.final_linear = nn.Linear(hidden_units[-1], 1)
 
@@ -65,7 +74,8 @@ class self_WDL(nn.Module):
         outputs = torch.sigmoid(0.5 * (wide_out + deep_out))
 
         return outputs
-    #class self_WDL(nn.Module):
+
+    # class self_WDL(nn.Module):
     """Instantiates the Wide&Deep Learning architecture.
     :param linear_feature_columns: 包含所有用于线性模型部分的迭代器
     :param dnn_feature_columns:    包含所有用于深度网络部分的迭代器
@@ -83,6 +93,7 @@ class self_WDL(nn.Module):
 
     """
 
+
 if __name__ == "__main__":
-    net = self_WDL([256,128,64,32,16,8])
+    net = self_WDL([256, 128, 64, 32, 16, 8])
     print(net)

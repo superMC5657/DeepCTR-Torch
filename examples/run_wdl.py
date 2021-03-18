@@ -14,7 +14,9 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 from deepctr_torch.models.self_wdl import self_WDL
 from sklearn.metrics import roc_auc_score
 import warnings
+
 warnings.filterwarnings('ignore')
+
 
 def get_xy_fd():
     # 读入训练集，验证集和测试集
@@ -31,8 +33,8 @@ def get_xy_fd():
     dl_train_dataset = TensorDataset(torch.tensor(trn_x).float(), torch.tensor(trn_y).float())
     dl_val_dataset = TensorDataset(torch.tensor(val_x).float(), torch.tensor(val_y).float())
 
-    #dl_train = DataLoader(dl_train_dataset, shuffle=True, batch_size=32)
-    #dl_val = DataLoader(dl_val_dataset, shuffle=True, batch_size=32)
+    # dl_train = DataLoader(dl_train_dataset, shuffle=True, batch_size=32)
+    # dl_val = DataLoader(dl_val_dataset, shuffle=True, batch_size=32)
     return fea_col, (trn_x, trn_y), (val_x, val_y), test_x
 
 
@@ -65,10 +67,10 @@ def train_dwl(model, train_iter, val_iter, loss_func=None, optimizer=None, metri
             # 梯度清零
             optimizer.zero_grad()
             # 正向传播
-            predictions = model(features);
-            loss = loss_func(predictions, labels)
+            predictions = model(features)
+            loss = loss_func(predictions.squeeze(dim=1), labels)
             try:
-                metric = metric_func(predictions, labels)
+                metric = metric_func(predictions.squeeze(dim=1), labels)
             except ValueError:
                 pass
             # 反向传播
@@ -79,7 +81,7 @@ def train_dwl(model, train_iter, val_iter, loss_func=None, optimizer=None, metri
             loss_sum += loss.item()
             metric_sum += metric.item()
             if step % log_step_freq == 0:
-                print(("[step=%d] loss: %.3f, " + metric_name + ": %.3f") % (step, loss_sum / step, metric_sum / step));
+                print(("[step=%d] loss: %.3f, " + metric_name + ": %.3f") % (step, loss_sum / step, metric_sum / step))
         # 验证阶段
         model.eval()
         val_loss_sum = 0.0
@@ -89,9 +91,9 @@ def train_dwl(model, train_iter, val_iter, loss_func=None, optimizer=None, metri
         for val_step, (features, labels) in enumerate(val_iter, 1):
             with torch.no_grad():
                 predictions = model(features)
-                val_loss = loss_func(predictions, labels)
+                val_loss = loss_func(predictions.squeeze(dim=1), labels)
                 try:
-                    val_metric = metric_func(predictions, labels)
+                    val_metric = metric_func(predictions.squeeze(dim=1), labels)
                 except ValueError:
                     pass
 
@@ -116,17 +118,19 @@ if __name__ == "__main__":
     # 生成迭代数据
     fea_col, (trn_x, trn_y), (val_x, val_y), test_x = get_xy_fd()
     hidden_units = [256, 128, 64]
-    dnn_dropout = 0.
+    dnn_dropout = 0.2
+    epoch = 100
+    batch_size = 32
     model = self_WDL(fea_col, hidden_units, dnn_dropout)
     # summary(model, input_shape=(trn_x.shape[1],))
     # model paras
-    batch_size = 32
     loss_func = nn.BCELoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=0.0001)
     train, val = data_pipeline(trn_x, trn_y, val_x, val_y)
     # train set
-    dfhistory = train_dwl(model, train, val, loss_func=loss_func, optimizer=optimizer, metric_name="auc", metric_func=auc,
-              num_epochs=10)
+    dfhistory = train_dwl(model, train, val, loss_func=loss_func, optimizer=optimizer, metric_name="auc",
+                          metric_func=auc,
+                          num_epochs=epoch)
 
 
     def plot_metric(dfhistory, metric):
