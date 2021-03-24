@@ -114,6 +114,19 @@ def train_dwl(model, train_iter, val_iter, loss_func=None, optimizer=None, metri
     return dfhistory
 
 
+def plot_metric(dfhistory, metric):
+    train_metrics = dfhistory[metric]
+    val_metrics = dfhistory['val_' + metric]
+    epochs = range(1, len(train_metrics) + 1)
+    plt.plot(epochs, train_metrics, 'bo--')
+    plt.plot(epochs, val_metrics, 'ro-')
+    plt.title('Training and validation ' + metric)
+    plt.xlabel("Epochs")
+    plt.ylabel(metric)
+    plt.legend(["train_" + metric, 'val_' + metric])
+    plt.show()
+
+
 if __name__ == "__main__":
     # 生成迭代数据
     fea_col, (trn_x, trn_y), (val_x, val_y), test_x = get_xy_fd()
@@ -131,20 +144,6 @@ if __name__ == "__main__":
     dfhistory = train_dwl(model, train, val, loss_func=loss_func, optimizer=optimizer, metric_name="auc",
                           metric_func=auc,
                           num_epochs=epoch)
-
-
-    def plot_metric(dfhistory, metric):
-        train_metrics = dfhistory[metric]
-        val_metrics = dfhistory['val_' + metric]
-        epochs = range(1, len(train_metrics) + 1)
-        plt.plot(epochs, train_metrics, 'bo--')
-        plt.plot(epochs, val_metrics, 'ro-')
-        plt.title('Training and validation ' + metric)
-        plt.xlabel("Epochs")
-        plt.ylabel(metric)
-        plt.legend(["train_" + metric, 'val_' + metric])
-        plt.show()
-
 
     # 观察损失和准确率的变化
     plot_metric(dfhistory, "loss")
