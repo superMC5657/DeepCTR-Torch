@@ -120,6 +120,7 @@ if __name__ == "__main__":
     model = self_NFM(fea_col, hidden_units, dnn_dropout)
     # summary(model, input_shape=(trn_x.shape[1],))
     # model paras
+    summary(model, input_shape=(trn_x.shape[1],))
     batch_size = 32
     loss_func = nn.BCELoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=0.0001)
