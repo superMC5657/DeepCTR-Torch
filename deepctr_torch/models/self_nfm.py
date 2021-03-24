@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# !@Time    : 2021/3/24 上午10:56
+# !@Author  : miracleyin @email: miracleyin@live.com
+# !@File    : self_nfm.py.py
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # !@Time    : 2021/3/23 下午9:03
 # !@Author  : miracleyin @email: miracleyin@live.com
 # !@File    : self_NFM.py
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-
+from torchkeras import summary, Model
 class DNN(nn.Module):
     def __init__(self, hidden_units, dropout=0.):
         """
@@ -15,16 +20,16 @@ class DNN(nn.Module):
             dropout:
         """
         super(DNN, self).__init__()
-        self.dnn_network = nn.ModuleList([nn.linear(layer[0], layer[1]) for layer in list(zip(hidden_units[:-1], hidden_units[1:]))])
+        self.dnn_network = nn.ModuleList([nn.Linear(layer[0], layer[1]) for layer in list(zip(hidden_units[:-1], hidden_units[1:]))])
         self.dropout = nn.Dropout(dropout)
     def forward(self, x):
         for linear in self.dnn_network:
             x = linear(x)
-            x = nn.relu(x)
+            x = F.relu(x)
         x = self.dropout(x)
         return x
 
-class NFM(nn.Module):
+class self_NFM(nn.Module):
     def __init__(self, feature_columns, hidden_units, dnn_dropout=0.):
         """
         Args:
@@ -32,7 +37,7 @@ class NFM(nn.Module):
             hidden_units: dnn隐藏层
             dnn_dropout:
         """
-        super(NFM, self).__init__()
+        super(self_NFM, self).__init__()
         self.densen_feature_cols, self.sparse_feature_cols = feature_columns
         # embedding
         self.embed_layers = nn.ModuleDict({
@@ -51,7 +56,7 @@ class NFM(nn.Module):
         dense_inputs, sparse_inputs = x[:, :len(self.densen_feature_cols)], x[:, len(self.densen_feature_cols):]
         sparse_inputs = sparse_inputs.long() # 转成long类型才能作为nn.embedding的输入
         sparse_embeds = [self.embed_layers['embed_' + str(i)]
-                         (sparse_inputs[:, 1]) for i in range(sparse_inputs.shape[1])]
+                         (sparse_inputs[:, i]) for i in range(sparse_inputs.shape[1])]
         sparse_embeds = torch.stack(sparse_embeds)
         sparse_embeds = sparse_embeds.permute((1, 0, 2))
         embed_cross = 1/2 * (
@@ -62,3 +67,4 @@ class NFM(nn.Module):
         dnn_outputs = self.nn_final_linear(self.dnn_network(x))
         outputs = F.sigmoid(dnn_outputs)
         return outputs
+
