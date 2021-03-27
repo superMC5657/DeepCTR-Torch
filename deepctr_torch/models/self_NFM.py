@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
+
 class DNN(nn.Module):
     def __init__(self, hidden_units, dropout=0.):
         """
@@ -15,14 +16,28 @@ class DNN(nn.Module):
             dropout:
         """
         super(DNN, self).__init__()
-        self.dnn_network = nn.ModuleList([nn.linear(layer[0], layer[1]) for layer in list(zip(hidden_units[:-1], hidden_units[1:]))])
+        self.dnn_network = nn.ModuleList(
+            [LR(layer[0], layer[1]) for layer in list(zip(hidden_units[:-1], hidden_units[1:]))])
         self.dropout = nn.Dropout(dropout)
+
     def forward(self, x):
-        for linear in self.dnn_network:
-            x = linear(x)
-            x = nn.relu(x)
+        for lr in self.dnn_network:
+            x = lr(x)
         x = self.dropout(x)
         return x
+
+
+class LR(nn.Module):
+    def __init__(self, input, out):
+        super().__init__()
+        self.l = nn.Linear(input, out)
+        self.r = nn.ReLU()
+
+    def forward(self, x):
+        x = self.l(x)
+        x = self.r(x)
+        return x
+
 
 class NFM(nn.Module):
     def __init__(self, feature_columns, hidden_units, dnn_dropout=0.):
@@ -49,13 +64,13 @@ class NFM(nn.Module):
 
     def forward(self, x):
         dense_inputs, sparse_inputs = x[:, :len(self.densen_feature_cols)], x[:, len(self.densen_feature_cols):]
-        sparse_inputs = sparse_inputs.long() # 转成long类型才能作为nn.embedding的输入
+        sparse_inputs = sparse_inputs.long()  # 转成long类型才能作为nn.embedding的输入
         sparse_embeds = [self.embed_layers['embed_' + str(i)]
-                         (sparse_inputs[:, 1]) for i in range(sparse_inputs.shape[1])]
+                         (sparse_inputs[:, i]) for i in range(sparse_inputs.shape[1])]
         sparse_embeds = torch.stack(sparse_embeds)
         sparse_embeds = sparse_embeds.permute((1, 0, 2))
-        embed_cross = 1/2 * (
-            torch.pow(torch.sum(sparse_embeds, dim=1), 2) - torch.sum(torch.pow(sparse_embeds, 2), dim=1)
+        embed_cross = 0.5 * (
+                torch.pow(torch.sum(sparse_embeds, dim=1), 2) - torch.sum(torch.pow(sparse_embeds, 2), dim=1)
         )
         x = torch.cat([embed_cross, dense_inputs], dim=-1)
         x = self.bn(x)

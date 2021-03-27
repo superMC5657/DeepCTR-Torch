@@ -11,6 +11,8 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from torchkeras import summary, Model
 from torch.utils.data import DataLoader, Dataset, TensorDataset
+
+from deepctr_torch.models.self_NFM import NFM
 from deepctr_torch.models.self_wdl import self_WDL
 from sklearn.metrics import roc_auc_score
 import warnings
@@ -131,14 +133,15 @@ if __name__ == "__main__":
     # 生成迭代数据
     fea_col, (trn_x, trn_y), (val_x, val_y), test_x = get_xy_fd()
     hidden_units = [256, 128, 64]
-    dnn_dropout = 0.2
-    epoch = 100
+    dnn_dropout = 0.1
+    epoch = 15
     batch_size = 32
-    model = self_WDL(fea_col, hidden_units, dnn_dropout)
+    # model = self_WDL(fea_col, hidden_units, dnn_dropout)
+    model = NFM(fea_col, hidden_units, dnn_dropout)
     # summary(model, input_shape=(trn_x.shape[1],))
     # model paras
     loss_func = nn.BCELoss()
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.0003)
     train, val = data_pipeline(trn_x, trn_y, val_x, val_y)
     # train set
     dfhistory = train_dwl(model, train, val, loss_func=loss_func, optimizer=optimizer, metric_name="auc",
