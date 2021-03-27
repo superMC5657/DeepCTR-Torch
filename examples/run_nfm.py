@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # summary(model, input_shape=(trn_x.shape[1],))
     # model paras
     summary(model, input_shape=(trn_x.shape[1],))
-    batch_size = 32
+    batch_size = 128
     loss_func = nn.BCELoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=0.0001)
     #optimizer = torch.optim.SGD(params=model.parameters(), lr=0.0001)
